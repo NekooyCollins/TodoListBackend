@@ -8,10 +8,10 @@ The backend server for TodoList app implemented by Golang
 | --------- | ---- |
 | id | int |
 | title | string |
-| desc | string |
+| descption | string |
 | duration | int |
 | remaintime | int |
-| type | string |
+| typestr | string |
 | isfinish | bool |
 | isgrouptask | bool |
 
