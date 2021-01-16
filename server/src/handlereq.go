@@ -12,13 +12,13 @@ import (
 	"net/http"
 )
 
-//type taskListArray []database.UserTaskListType
-
 func handleRequests() {
 	http.HandleFunc("/login", loginCheck)
 	http.HandleFunc("/register", registerUser)
 	http.HandleFunc("/getuserdata", getUserData)
 	http.HandleFunc("/gettasklist",getTaskList)
+	http.HandleFunc("/gettaskmember",getTaskMember)
+	http.HandleFunc("/gettaskdetail",getTaskDetail)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
@@ -152,7 +152,6 @@ func getUserData(w http.ResponseWriter, r *http.Request) {
 // return all tasks list of the user.
 func getTaskList(w http.ResponseWriter, r *http.Request) {
 	var userdata database.UserType
-	//retTaskList := make([]database.TaskType, 1024)
 	var retTaskList []database.TaskType
 
 	// Get request query value.
@@ -218,4 +217,102 @@ func getTaskList(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type","application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(taskListJson)
+}
+
+// Return member array of one task
+func getTaskMember(w http.ResponseWriter, r *http.Request) {
+	var retUserList []database.UserType
+
+	// Get request query value.
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		fmt.Fprintf(w, "invalid_http_method")
+		return
+	}
+	inputTaskID:= r.URL.Query().Get("taskid")
+	if inputTaskID == "" {
+		http.Error(w, "Can't get value.", http.StatusBadRequest)
+		return
+	}
+
+	// Check from database.
+	queryStr := "SELECT * FROM usertasklist WHERE taskid='"+inputTaskID+"';"
+	rets, err := dbconn.DBConn.Query(queryStr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	// Get user id.
+	for rets.Next() {
+		var getTask database.UserTaskListType
+		if err = rets.Scan(&getTask.UserID, &getTask.TaskID); err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+		}
+		queryUserStr := "SELECT * FROM user WHERE id="+strconv.Itoa(getTask.UserID)+";"
+		userRet, err := dbconn.DBConn.Query(queryUserStr)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		for userRet.Next(){
+			var userItem database.UserType
+			if err = userRet.Scan(&userItem.ID, &userItem.Name, &userItem.Email, &userItem.Passwd); err != nil{
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			retUserList = append(retUserList, userItem)
+		}
+	}
+
+	// Return json data.
+	userListJson, err := json.Marshal(retUserList)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type","application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(userListJson)
+}
+
+
+// Return task detail to client.
+func getTaskDetail(w http.ResponseWriter, r *http.Request) {
+	// Get request query value.
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		fmt.Fprintf(w, "invalid_http_method")
+		return
+	}
+	inputTaskID:= r.URL.Query().Get("taskid")
+	if inputTaskID == "" {
+		http.Error(w, "Can't get value.", http.StatusBadRequest)
+		return
+	}
+
+	// Check from database.
+	queryStr := "SELECT * FROM task WHERE id="+inputTaskID+";"
+	rets, err := dbconn.DBConn.Query(queryStr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Send back json data.
+	for rets.Next() {
+		var taskData database.TaskType
+		if err = rets.Scan(&taskData.ID, &taskData.Title, &taskData.Desc, &taskData.Duration,&taskData.RemainTime,
+			&taskData.Type, &taskData.IsFinish, &taskData.IsGroupTask); err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+		}
+
+		userJson, err := json.Marshal(taskData)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		w.Header().Set("Content-Type","application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(userJson)
+	}
 }
