@@ -19,6 +19,7 @@ func handleRequests() {
 	http.HandleFunc("/gettasklist",getTaskList)
 	http.HandleFunc("/gettaskmember",getTaskMember)
 	http.HandleFunc("/gettaskdetail",getTaskDetail)
+	http.HandleFunc("/addtask", addTask)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
