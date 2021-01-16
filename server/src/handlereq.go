@@ -53,15 +53,16 @@ func loginCheck(w http.ResponseWriter, r *http.Request) {
 	// Verify user email and password
 	for rets.Next(){
 		var userdata database.UserType
-		if err = rets.Scan(&userdata.ID, &userdata.Email, &userdata.Name, &userdata.Passwd); err != nil {
+		if err = rets.Scan(&userdata.ID, &userdata.Name, &userdata.Email, &userdata.Passwd); err != nil {
 			http.Error(w, err.Error(), http.StatusBadGateway)
 		}
-		if userdata.Email != inputEmail || userdata.Passwd != inputPasswd {
-			http.Error(w, err.Error(), http.StatusForbidden)
+
+		if userdata.Email == inputEmail && userdata.Passwd == inputPasswd {
+			w.WriteHeader(http.StatusOK)
+			return
 		}
-		w.WriteHeader(http.StatusOK)
 	}
-	return
+	http.Error(w, "Wrong email or password", http.StatusForbidden)
 }
 
 // Get new user data to register.
