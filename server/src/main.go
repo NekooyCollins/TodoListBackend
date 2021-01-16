@@ -1,6 +1,8 @@
 package main
 
-import database "./database"
+import (
+	database "./database"
+)
 
 var dbconn database.DBType
 

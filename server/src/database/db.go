@@ -1,8 +1,9 @@
 package database
 
 import (
-	"fmt"
 	"database/sql"
+	"time"
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -35,7 +36,7 @@ type UserTaskListType struct {
 
 // UserFriendList receives original user-friend
 // list data from DB
-type UserFriendList struct {
+type UserFriendListType struct {
 	UserID   int `json:"userid"`
 	FriendID int `json:"friendid"`
 }
@@ -57,11 +58,16 @@ func (db *DBType) DBConnect() *DBType {
 		DBConfig.DBHost + ":" +
 		DBConfig.DBPort + ")/" +
 		DBConfig.DBName
+	fmt.Printf("DB address "+connStr)
 	db.DBConn, err = sql.Open("mysql", connStr)
 	if err != nil {
 		panic(err.Error())
 	}
 	fmt.Println("Connection to database successful.")
+
+	db.DBConn.SetMaxIdleConns(64)
+	db.DBConn.SetMaxOpenConns(64)
+	db.DBConn.SetConnMaxLifetime(time.Minute)
 	return db
 }
 
