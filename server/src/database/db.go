@@ -11,10 +11,10 @@ import (
 type TaskType struct {
 	ID          int    `json:"id"`
 	Title       string `json:"title"`
-	Desc        string `json:"desc"`
+	Desc        string `json:"descption"`
 	Duration    int    `json:"duration"`
 	RemainTime  int    `json:"remaintime"`
-	Type        string `json:"type"`
+	Type        string `json:"typestr"`
 	IsFinish    bool   `json:"isfinish"`
 	IsGroupTask bool   `json:"isgrouptask"`
 }

@@ -119,6 +119,7 @@ func getUserData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	inputEmail:= r.URL.Query().Get("email")
+	fmt.Println("Ask for user data of:", inputEmail)
 	if inputEmail == "" {
 		http.Error(w, "Can't get value.", http.StatusBadRequest)
 		return
@@ -135,7 +136,7 @@ func getUserData(w http.ResponseWriter, r *http.Request) {
 	// Send back json data.
 	for rets.Next() {
 		var userdata database.UserType
-		if err = rets.Scan(&userdata.ID, &userdata.Email, &userdata.Name, &userdata.Passwd); err != nil {
+		if err = rets.Scan(&userdata.ID, &userdata.Name, &userdata.Email, &userdata.Passwd); err != nil {
 			http.Error(w, err.Error(), http.StatusBadGateway)
 		}
 
