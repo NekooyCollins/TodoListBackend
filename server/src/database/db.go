@@ -11,7 +11,7 @@ import (
 type TaskType struct {
 	ID          int    `json:"id"`
 	Title       string `json:"title"`
-	Desc        string `json:"descption"`
+	Desc        string `json:"description"`
 	Duration    int    `json:"duration"`
 	RemainTime  int    `json:"remaintime"`
 	Type        string `json:"typestr"`
@@ -63,7 +63,7 @@ func (db *DBType) DBConnect() *DBType {
 		DBConfig.DBHost + ":" +
 		DBConfig.DBPort + ")/" +
 		DBConfig.DBName
-	fmt.Printf("DB address "+connStr)
+	fmt.Printf("DB address " + connStr)
 	db.DBConn, err = sql.Open("mysql", connStr)
 	if err != nil {
 		panic(err.Error())
