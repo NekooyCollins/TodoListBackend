@@ -40,7 +40,7 @@ func addTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var isGrouptask string;
+	var isGrouptask string
 	if formData.IsGroupTask{
 		isGrouptask = "true"
 	}else{

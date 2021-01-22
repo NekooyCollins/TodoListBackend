@@ -2,9 +2,9 @@ package database
 
 import (
 	"database/sql"
-	"time"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"time"
 )
 
 // TaskType receives original task data from db
@@ -39,6 +39,11 @@ type UserTaskListType struct {
 type UserFriendListType struct {
 	UserID   int `json:"userid"`
 	FriendID int `json:"friendid"`
+}
+
+type RankListType struct {
+	UserName   		string 	`json:"username"`
+	TotalFocusTime  int 	`json:"totalfocustime"`
 }
 
 // DBType for chain call

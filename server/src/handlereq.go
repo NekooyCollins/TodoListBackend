@@ -20,6 +20,9 @@ func handleRequests() {
 	http.HandleFunc("/gettaskmember",getTaskMember)
 	http.HandleFunc("/gettaskdetail",getTaskDetail)
 	http.HandleFunc("/addtask", addTask)
+	http.HandleFunc("/getfriendlist", getFriendList)
+	http.HandleFunc("/getranklist", getRankList)
+	http.HandleFunc("/addfriend", addFriend)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
@@ -318,4 +321,139 @@ func getTaskDetail(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write(userJson)
 	}
+}
+
+// Handle getfriendlist request,
+// return all friends of the user.
+func getFriendList(w http.ResponseWriter, r *http.Request) {
+	var userdata database.UserType
+	var retFriendList []database.UserType
+
+	// Get request query value.
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		fmt.Fprintf(w, "invalid_http_method")
+		return
+	}
+	inputEmail:= r.URL.Query().Get("email")
+	if inputEmail == "" {
+		http.Error(w, "Can't get value.", http.StatusBadRequest)
+		return
+	}
+
+	// Check from database.
+	queryStr := "SELECT * FROM user WHERE email='"+inputEmail+"';"
+	rets, err := dbconn.DBConn.Query(queryStr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	// Get user id.
+	for rets.Next() {
+		if err = rets.Scan(&userdata.ID, &userdata.Email, &userdata.Name, &userdata.Passwd); err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+		}
+		break
+	}
+	println("now user name is: " + userdata.Name )
+	println("now userID is: " + strconv.Itoa(userdata.ID))
+	// Get user friends.
+	queryStr = "SELECT * FROM userfriendlist WHERE userid="+strconv.Itoa(userdata.ID)+";"
+	getfriend, err := dbconn.DBConn.Query(queryStr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	for getfriend.Next() {
+		var userfriends database.UserFriendListType
+		var friend database.UserType
+		if err = getfriend.Scan(&userfriends.UserID, &userfriends.FriendID); err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+		}
+		queryStr = "SELECT * FROM user WHERE id="+strconv.Itoa(userfriends.FriendID)+";"
+		retFriends, err := dbconn.DBConn.Query(queryStr)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		for retFriends.Next(){
+			if err = retFriends.Scan(&friend.ID, &friend.Name, &friend.Email, &friend.Passwd); err != nil {
+				http.Error(w, err.Error(), http.StatusBadGateway)
+			}
+			retFriendList = append(retFriendList, friend)
+		}
+		println("now friend name is: " + friend.Name )
+		println("now friendID is: " + strconv.Itoa(friend.ID))
+	}
+
+	// Return json data.
+	friendListJson, err := json.Marshal(retFriendList)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type","application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(friendListJson)
+}
+
+// insert friend relationship
+func addFriend(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		fmt.Fprintf(w, "invalid_http_method")
+		return
+	}
+	r.ParseForm()
+
+	// Parse json
+	formData := make(map[string]string)
+	json.NewDecoder(r.Body).Decode(&formData)
+
+	myEmail := formData["myemail"]
+	friendEmail := formData["friendemail"]
+
+	// get userID
+	userRet, err:= dbconn.DBConn.Query("SELECT * FROM user WHERE email='"+myEmail+"';")
+	if err != nil{
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
+	if userRet == nil{
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+
+	// get friend's ID
+	friendRet, err:= dbconn.DBConn.Query("SELECT * FROM user WHERE email='"+friendEmail+"';")
+	if err != nil{
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
+	if friendRet == nil{
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+
+	var userdata database.UserType
+	var frienddata database.UserType
+
+	for userRet.Next(){
+		if err = userRet.Scan(&userdata.ID, &userdata.Name, &userdata.Email, &userdata.Passwd); err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+		}
+	}
+	for friendRet.Next(){
+		if err = friendRet.Scan(&frienddata.ID, &frienddata.Name, &frienddata.Email, &frienddata.Passwd); err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+		}
+	}
+	// Add user-friend relationship into usertasklist table
+	insertSql := "INSERT INTO userfriendlist VALUES ("+strconv.Itoa(userdata.ID)+", "+strconv.Itoa(frienddata.ID)+")"
+	_, err = dbconn.DBConn.Exec(insertSql)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
