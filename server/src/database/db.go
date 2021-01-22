@@ -41,6 +41,11 @@ type UserFriendListType struct {
 	FriendID int `json:"friendid"`
 }
 
+type RankListType struct {
+	UserName   		string 	`json:"username"`
+	TotalFocusTime  int 	`json:"totalfocustime"`
+}
+
 // DBType for chain call
 type DBType struct {
 	DBConn *sql.DB
