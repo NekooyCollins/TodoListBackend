@@ -10,6 +10,7 @@ func main() {
 	// Open database connection
 	dbconn.DBConnect()
 	defer dbconn.DBClose()
+	
 
 	handleRequests()
 }
