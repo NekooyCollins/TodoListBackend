@@ -23,6 +23,7 @@ func handleRequests() {
 	http.HandleFunc("/getfriendlist", getFriendList)
 	http.HandleFunc("/getranklist", getRankList)
 	http.HandleFunc("/addfriend", addFriend)
+	http.HandleFunc("/settaskisfinished", setTaskIsFinished)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
@@ -157,6 +158,7 @@ func getUserData(w http.ResponseWriter, r *http.Request) {
 // Handle gettasklist request,
 // return all tasks list of the user.
 func getTaskList(w http.ResponseWriter, r *http.Request) {
+	println("getTaskList is called!!!!")
 	var userdata database.UserType
 	var retTaskList []database.TaskType
 
@@ -325,6 +327,7 @@ func getTaskDetail(w http.ResponseWriter, r *http.Request) {
 // Handle getfriendlist request,
 // return all friends of the user.
 func getFriendList(w http.ResponseWriter, r *http.Request) {
+	println("getFriendList is called!!!!!")
 	var userdata database.UserType
 	var retFriendList []database.UserType
 
@@ -398,6 +401,7 @@ func getFriendList(w http.ResponseWriter, r *http.Request) {
 
 // insert friend relationship
 func addFriend(w http.ResponseWriter, r *http.Request) {
+	println("addFriend is called!!!!")
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		fmt.Fprintf(w, "invalid_http_method")
@@ -450,6 +454,34 @@ func addFriend(w http.ResponseWriter, r *http.Request) {
 	// Add user-friend relationship into usertasklist table
 	insertSql := "INSERT INTO userfriendlist VALUES ("+strconv.Itoa(userdata.ID)+", "+strconv.Itoa(frienddata.ID)+")"
 	_, err = dbconn.DBConn.Exec(insertSql)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func setTaskIsFinished(w http.ResponseWriter, r *http.Request){
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		fmt.Fprintf(w, "invalid_http_method")
+		return
+	}
+	r.ParseForm()
+
+	// Parse json
+	formData := make(map[string]string)
+	json.NewDecoder(r.Body).Decode(&formData)
+
+	finishedTaskId := formData["taskid"]
+	fmt.Println()
+	if finishedTaskId == "" {
+		http.Error(w, "taskid cannot be empty .", http.StatusBadRequest)
+		return
+	}
+
+	updateSql := "UPDATE task SET isfinish=true WHERE id=" + finishedTaskId + ";"
+	_, err := dbconn.DBConn.Exec(updateSql)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
