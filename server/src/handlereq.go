@@ -487,3 +487,25 @@ func setTaskIsFinished(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 }
+
+// Finish a task.
+func finishTask(w http.ResponseWriter, r *http.Request) {
+	// Get request query value.
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		fmt.Fprintf(w, "invalid_http_method")
+		return
+	}
+	r.ParseForm()
+	formData := make(map[string]string)
+	json.NewDecoder(r.Body).Decode(&formData)
+	inputTaskID := formData["taskid"]
+
+	updateSql := "UPDATE task SET isfinish=true WHERE id=" + inputTaskID + ";"
+	_, err := dbconn.DBConn.Exec(updateSql)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}

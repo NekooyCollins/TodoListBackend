@@ -168,15 +168,12 @@ func quitGroupTask(w http.ResponseWriter, r *http.Request){
 	r.ParseForm()
 	formData := make(map[string]string)
 	json.NewDecoder(r.Body).Decode(&formData)
-	inputUserID,_ := formData["userid"]
 	inputTaskID,_ := strconv.Atoi(formData["taskid"])
 
 	for _, item := range cacheGroupTaskList{
 		if item.taskInfo.ID == inputTaskID{
-			if _, ok := item.member[inputUserID]; ok{
-				item.member[inputUserID] = false
-				w.WriteHeader(http.StatusOK)
-				return
+			for key, _ := range item.member{
+				item.member[key] = false
 			}
 		}
 	}
