@@ -26,7 +26,6 @@ func getGroupTaskState(w http.ResponseWriter, r *http.Request) {
 	}
 	// Get user id
 	inputID := r.URL.Query().Get("id")
-	fmt.Println("Ask for user data of:", inputID)
 
 	// Check from cache group task list.
 	for _, task := range cacheGroupTaskList {
@@ -53,6 +52,7 @@ func getGroupTaskState(w http.ResponseWriter, r *http.Request) {
 
 // A member in a group task start the task.
 func postStartGroupTask(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Try to start a group task.")
 	// Get request query value.
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -67,6 +67,7 @@ func postStartGroupTask(w http.ResponseWriter, r *http.Request) {
 
 	var newGroupTask groupTask
 	newGroupTask.taskInfo = formData
+	newGroupTask.member = make(map[string]bool)
 
 	// Find members of this task.
 	// Get user tasks.
@@ -89,13 +90,14 @@ func postStartGroupTask(w http.ResponseWriter, r *http.Request) {
 	// If already in a group task, retrun with StatusBadGateway.
 	for _, item := range cacheGroupTaskList {
 		if item.taskInfo.ID == newGroupTask.taskInfo.ID{
-			http.Error(w, err.Error(), http.StatusBadGateway)
+			http.Error(w, "Some ohter member already started a task", http.StatusBadGateway)
 			return
 		}
 	}
 
 	cacheGroupTaskList = append(cacheGroupTaskList, newGroupTask)
 	w.WriteHeader(http.StatusOK)
+	fmt.Println("Group task ", newGroupTask.taskInfo.Title, "has started." )
 	return
 }
 
@@ -112,6 +114,7 @@ func joinGroupTask(w http.ResponseWriter, r *http.Request){
 	json.NewDecoder(r.Body).Decode(&formData)
 	inputUserID,_ := formData["userid"]
 	inputTaskID,_ := strconv.Atoi(formData["taskid"])
+	fmt.Println("User ", inputUserID, "wants to join task", inputTaskID)
 
 	for _, item := range cacheGroupTaskList{
 		if item.taskInfo.ID == inputTaskID{
