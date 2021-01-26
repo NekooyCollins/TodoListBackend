@@ -12,6 +12,7 @@ import (
 type groupTask struct {
 	taskInfo   database.TaskType
 	member     map[string]bool
+	alertFlag  map[string]bool
 }
 
 var cacheGroupTaskList []groupTask
@@ -29,9 +30,10 @@ func getGroupTaskState(w http.ResponseWriter, r *http.Request) {
 
 	// Check from cache group task list.
 	for _, task := range cacheGroupTaskList {
-		if val, ok := task.member[inputID]; ok{
+		if val, ok := task.alertFlag[inputID]; ok{
 			if val == false {
-				task.member[inputID] = true
+				// If not join yet, alert
+				task.alertFlag[inputID] = true
 				taskJson, err := json.Marshal(task.taskInfo)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
@@ -68,6 +70,7 @@ func postStartGroupTask(w http.ResponseWriter, r *http.Request) {
 	var newGroupTask groupTask
 	newGroupTask.taskInfo = formData
 	newGroupTask.member = make(map[string]bool)
+	newGroupTask.alertFlag = make(map[string]bool)
 
 	// Find members of this task.
 	// Get user tasks.
@@ -85,6 +88,7 @@ func postStartGroupTask(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		newGroupTask.member[strconv.Itoa(tmp.UserID)] = false
+		newGroupTask.alertFlag[strconv.Itoa(tmp.UserID)] = false
 	}
 
 	// If already in a group task, retrun with StatusBadGateway.
