@@ -16,21 +16,20 @@ func getRankList(w http.ResponseWriter, r *http.Request) {
 	// Return list
 	var retRankList []database.RankListType
 
-
 	// Get request query value.
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		fmt.Fprintf(w, "invalid_http_method")
 		return
 	}
-	inputUserID:= r.URL.Query().Get("userid")
+	inputUserID := r.URL.Query().Get("userid")
 	if inputUserID == "" {
 		http.Error(w, "Can't get value.", http.StatusBadRequest)
 		return
 	}
 
 	// Get all friend's ID from userfriendlist.
-	queryStr := "SELECT * FROM userfriendlist WHERE userid="+inputUserID+";"
+	queryStr := "SELECT * FROM userfriendlist WHERE userid=" + inputUserID + ";"
 	friendRets, err := dbconn.DBConn.Query(queryStr)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -50,7 +49,7 @@ func getRankList(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Get this friends' all info from user.
-		queryStr = "SELECT * FROM user WHERE id="+strconv.Itoa(userAndFriend.FriendID)+";"
+		queryStr = "SELECT * FROM user WHERE id=" + strconv.Itoa(userAndFriend.FriendID) + ";"
 		friendInfoRet, err := dbconn.DBConn.Query(queryStr)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -63,7 +62,7 @@ func getRankList(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// Get all taskID from usertasklist table
-			queryStr = "SELECT * FROM usertasklist WHERE userid="+strconv.Itoa(friendInfo.ID)+";"
+			queryStr = "SELECT * FROM usertasklist WHERE userid=" + strconv.Itoa(friendInfo.ID) + ";"
 			taskIdRet, err := dbconn.DBConn.Query(queryStr)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
@@ -94,10 +93,10 @@ func getRankList(w http.ResponseWriter, r *http.Request) {
 			}
 			// Get total-focus-time of one friend
 			singleRankItem.UserName = friendInfo.Name
-			if (isTaskEmpty == true){
+			if isTaskEmpty == true {
 				totalTimeOfOneFriend = 0
 			} else {
-				for i:= 0; i < len(finishedTaskList); i++{
+				for i := 0; i < len(finishedTaskList); i++ {
 					totalTimeOfOneFriend = totalTimeOfOneFriend + finishedTaskList[i].Duration
 				}
 			}
@@ -106,14 +105,14 @@ func getRankList(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	sort.Slice(retRankList,func(i, j int) bool {
+	sort.Slice(retRankList, func(i, j int) bool {
 		if retRankList[i].TotalFocusTime > retRankList[j].TotalFocusTime {
 			return true
 		}
 		return false
 	})
 
-	for i:= 0; i < len(retRankList); i++{
+	for i := 0; i < len(retRankList); i++ {
 		fmt.Println("now is " + retRankList[i].UserName)
 		fmt.Println("his total focus time is " + strconv.Itoa(retRankList[i].TotalFocusTime))
 	}
@@ -124,7 +123,7 @@ func getRankList(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	w.Header().Set("Content-Type","application/json")
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(friendListJson)
 }

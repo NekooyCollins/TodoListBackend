@@ -42,8 +42,8 @@ type UserFriendListType struct {
 }
 
 type RankListType struct {
-	UserName   		string 	`json:"username"`
-	TotalFocusTime  int 	`json:"totalfocustime"`
+	UserName       string `json:"username"`
+	TotalFocusTime int    `json:"totalfocustime"`
 }
 
 // DBType for chain call

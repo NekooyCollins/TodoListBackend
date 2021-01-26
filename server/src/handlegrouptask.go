@@ -10,9 +10,10 @@ import (
 
 // Cache active group task on server.
 type groupTask struct {
-	taskInfo   database.TaskType
-	member     map[string]bool
-	alertFlag  map[string]bool
+	taskInfo  database.TaskType
+	member    map[string]bool
+	alertFlag map[string]bool
+	quitFlag  bool
 }
 
 var cacheGroupTaskList []groupTask
@@ -30,7 +31,7 @@ func getGroupTaskState(w http.ResponseWriter, r *http.Request) {
 
 	// Check from cache group task list.
 	for _, task := range cacheGroupTaskList {
-		if val, ok := task.alertFlag[inputID]; ok{
+		if val, ok := task.alertFlag[inputID]; ok {
 			if val == false {
 				// If not join yet, alert
 				task.alertFlag[inputID] = true
@@ -89,11 +90,12 @@ func postStartGroupTask(w http.ResponseWriter, r *http.Request) {
 		}
 		newGroupTask.member[strconv.Itoa(tmp.UserID)] = false
 		newGroupTask.alertFlag[strconv.Itoa(tmp.UserID)] = false
+		newGroupTask.quitFlag = false
 	}
 
 	// If already in a group task, retrun with StatusBadGateway.
 	for _, item := range cacheGroupTaskList {
-		if item.taskInfo.ID == newGroupTask.taskInfo.ID{
+		if item.taskInfo.ID == newGroupTask.taskInfo.ID {
 			http.Error(w, "Some ohter member already started a task", http.StatusBadGateway)
 			return
 		}
@@ -101,12 +103,12 @@ func postStartGroupTask(w http.ResponseWriter, r *http.Request) {
 
 	cacheGroupTaskList = append(cacheGroupTaskList, newGroupTask)
 	w.WriteHeader(http.StatusOK)
-	fmt.Println("Group task ", newGroupTask.taskInfo.Title, "has started." )
+	fmt.Println("Group task ", newGroupTask.taskInfo.Title, "has started.")
 	return
 }
 
 // Accept invitation and join group task.
-func joinGroupTask(w http.ResponseWriter, r *http.Request){
+func joinGroupTask(w http.ResponseWriter, r *http.Request) {
 	// Get request query value.
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -116,14 +118,15 @@ func joinGroupTask(w http.ResponseWriter, r *http.Request){
 	r.ParseForm()
 	formData := make(map[string]string)
 	json.NewDecoder(r.Body).Decode(&formData)
-	inputUserID,_ := formData["userid"]
-	inputTaskID,_ := strconv.Atoi(formData["taskid"])
+	inputUserID, _ := formData["userid"]
+	inputTaskID, _ := strconv.Atoi(formData["taskid"])
 	fmt.Println("User ", inputUserID, "wants to join task", inputTaskID)
 
-	for _, item := range cacheGroupTaskList{
-		if item.taskInfo.ID == inputTaskID{
-			if _, ok := item.member[inputUserID]; ok{
+	for _, item := range cacheGroupTaskList {
+		if item.taskInfo.ID == inputTaskID {
+			if _, ok := item.member[inputUserID]; ok {
 				item.member[inputUserID] = true
+				item.alertFlag[inputUserID] = true
 				w.WriteHeader(http.StatusOK)
 				return
 			}
@@ -135,7 +138,7 @@ func joinGroupTask(w http.ResponseWriter, r *http.Request){
 }
 
 // Check if all members have joined one group task.
-func checkStartGroupTask(w http.ResponseWriter, r *http.Request){
+func checkStartGroupTask(w http.ResponseWriter, r *http.Request) {
 	// Get request query value.
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -145,11 +148,11 @@ func checkStartGroupTask(w http.ResponseWriter, r *http.Request){
 	r.ParseForm()
 	formData := make(map[string]string)
 	json.NewDecoder(r.Body).Decode(&formData)
-	inputTaskID,_ := strconv.Atoi(formData["taskid"])
+	inputTaskID, _ := strconv.Atoi(formData["taskid"])
 
-	for _, item := range cacheGroupTaskList{
-		if item.taskInfo.ID == inputTaskID{
-			for _, val := range item.member{
+	for _, item := range cacheGroupTaskList {
+		if item.taskInfo.ID == inputTaskID {
+			for _, val := range item.member {
 				if val == false {
 					http.Error(w, "Failed to start the task.", http.StatusBadRequest)
 					return
@@ -165,7 +168,7 @@ func checkStartGroupTask(w http.ResponseWriter, r *http.Request){
 }
 
 // Quit a group task.
-func quitGroupTask(w http.ResponseWriter, r *http.Request){
+func quitGroupTask(w http.ResponseWriter, r *http.Request) {
 	// Get request query value.
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -175,24 +178,26 @@ func quitGroupTask(w http.ResponseWriter, r *http.Request){
 	r.ParseForm()
 	formData := make(map[string]string)
 	json.NewDecoder(r.Body).Decode(&formData)
-	inputTaskID,_ := strconv.Atoi(formData["taskid"])
+	inputTaskID, _ := strconv.Atoi(formData["taskid"])
 
-	for _, item := range cacheGroupTaskList{
-		if item.taskInfo.ID == inputTaskID{
-			for key, _ := range item.member{
-				item.member[key] = false
-			}
+	for idx, item := range cacheGroupTaskList {
+		if item.taskInfo.ID == inputTaskID {
+			cacheGroupTaskList[idx].quitFlag = true
+			fmt.Println("Task ", inputTaskID, "has quit.")
+			w.WriteHeader(http.StatusOK)
+			return
 		}
 	}
 
-	http.Error(w, "Failed to join the task.", http.StatusBadRequest)
+	http.Error(w, "Failed to quit the task.", http.StatusBadRequest)
 	return
 }
 
 // Periodically check if an on-going group task is quit by others,
 // if quit, response 200.
-func checkGroupTaskQuit(w http.ResponseWriter, r *http.Request){
+func checkGroupTaskQuit(w http.ResponseWriter, r *http.Request) {
 	// Get request query value.
+	fmt.Println("Check for task quit status here!")
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		fmt.Fprintf(w, "invalid_http_method")
@@ -201,19 +206,18 @@ func checkGroupTaskQuit(w http.ResponseWriter, r *http.Request){
 	r.ParseForm()
 	formData := make(map[string]string)
 	json.NewDecoder(r.Body).Decode(&formData)
-	inputTaskID,_ := strconv.Atoi(formData["taskid"])
+	inputTaskID, _ := strconv.Atoi(formData["taskid"])
 
-	for _, item := range cacheGroupTaskList{
-		if item.taskInfo.ID == inputTaskID{
-			for _, val := range item.member{
-				if val == false {
-					w.WriteHeader(http.StatusOK)
-					return
-				}
+	for _, item := range cacheGroupTaskList {
+		if item.taskInfo.ID == inputTaskID {
+			if item.quitFlag == true {
+				fmt.Println("Found task ", inputTaskID, "has quit.")
+				w.WriteHeader(http.StatusOK)
+				return
 			}
 		}
 	}
 
-	http.Error(w, "Failed to start the task.", http.StatusBadRequest)
+	http.Error(w, "Task isn't quited.", http.StatusBadRequest)
 	return
 }
