@@ -25,7 +25,9 @@ func handleRequests() {
 	http.HandleFunc("/getgrouptaskstate", getGroupTaskState)
 	http.HandleFunc("/startgrouptask", postStartGroupTask)
 	http.HandleFunc("/joingrouptask", joinGroupTask)
-	http.HandleFunc("/checkstartgrouptask",checkStartGroupTask)
+	http.HandleFunc("/checkstartgrouptask", checkStartGroupTask)
+	http.HandleFunc("/quitgrouptask", quitGroupTask)
+	http.HandleFunc("/checkgrouptaskquit", checkGroupTaskQuit)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
