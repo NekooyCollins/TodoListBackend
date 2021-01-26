@@ -23,6 +23,9 @@ func handleRequests() {
 	http.HandleFunc("/addfriend", addFriend)
 	http.HandleFunc("/settaskisfinished", setTaskIsFinished)
 	http.HandleFunc("/getgrouptaskstate", getGroupTaskState)
+	http.HandleFunc("/startgrouptask", postStartGroupTask)
+	http.HandleFunc("/joingrouptask", joinGroupTask)
+	http.HandleFunc("/checkstartgrouptask",checkStartGroupTask)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
@@ -122,7 +125,7 @@ func getUserData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	inputEmail := r.URL.Query().Get("email")
-	fmt.Println("Ask for user data of:", inputEmail)
+
 	if inputEmail == "" {
 		http.Error(w, "Can't get value.", http.StatusBadRequest)
 		return
@@ -157,7 +160,6 @@ func getUserData(w http.ResponseWriter, r *http.Request) {
 // Handle gettasklist request,
 // return all tasks list of the user.
 func getTaskList(w http.ResponseWriter, r *http.Request) {
-	println("getTaskList is called!!!!")
 	var userdata database.UserType
 	var retTaskList []database.TaskType
 
