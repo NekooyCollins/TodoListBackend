@@ -12,7 +12,6 @@ import (
 // Handle getranklist request,
 // return all focustime of friends.
 func getRankList(w http.ResponseWriter, r *http.Request) {
-	println("+++++++++here is Ranking func+++++++++")
 	// Return list
 	var retRankList []database.RankListType
 
