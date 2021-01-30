@@ -28,6 +28,7 @@ func handleRequests() {
 	http.HandleFunc("/checkstartgrouptask", checkStartGroupTask)
 	http.HandleFunc("/quitgrouptask", quitGroupTask)
 	http.HandleFunc("/checkgrouptaskquit", checkGroupTaskQuit)
+	http.HandleFunc("/postlocaldataupdate", postLocalDataUpdate)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
@@ -511,5 +512,56 @@ func finishTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	w.WriteHeader(http.StatusOK)
+}
+
+// Update data to database
+func postLocalDataUpdate(w http.ResponseWriter, r *http.Request){
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		fmt.Fprintf(w, "invalid_http_method")
+		return
+	}
+	inputUserID := r.URL.Query().Get("userid")
+
+	r.ParseForm()
+	var formData []database.TaskType
+	json.NewDecoder(r.Body).Decode(&formData)
+
+	// Append new task into database
+	for _, task := range formData{
+		if task.ID == 0{
+			insertSql := "INSERT INTO task(title, descption, duration, remaintime, typestr, isfinish, isgrouptask) VALUES ('" +
+				task.Title + "', '" + task.Desc + "', " + strconv.Itoa(task.Duration) + ", " + strconv.Itoa(task.Duration) +
+				", '" + task.Type + "', false, false)"
+
+			res, err := dbconn.DBConn.Exec(insertSql)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			taskID, err := res.LastInsertId()
+
+			insertSql = "INSERT INTO usertasklist VALUES (" + inputUserID + ", " + strconv.FormatInt(taskID, 10) + ")"
+			_, err = dbconn.DBConn.Exec(insertSql)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+		}
+	}
+
+	// Update task data status
+	for _, task := range formData{
+		if task.ID != 0 && task.IsFinish == true {
+			updateSql := "UPDATE task SET isfinish=true WHERE id=" + strconv.Itoa(task.ID) + ";"
+			_, err := dbconn.DBConn.Exec(updateSql)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+		}
+	}
+
 	w.WriteHeader(http.StatusOK)
 }
