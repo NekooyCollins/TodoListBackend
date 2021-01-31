@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
+	"strings"
 )
 
 // Cache active group task on server.
@@ -75,7 +75,7 @@ func postStartGroupTask(w http.ResponseWriter, r *http.Request) {
 
 	// Find members of this task.
 	// Get user tasks.
-	queryStr := "SELECT * FROM usertasklist WHERE taskid=" + strconv.Itoa(newGroupTask.taskInfo.ID) + ";"
+	queryStr := "SELECT * FROM usertasklist WHERE taskid='" + newGroupTask.taskInfo.ID + "';"
 	gettask, err := dbconn.DBConn.Query(queryStr)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -88,15 +88,18 @@ func postStartGroupTask(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadGateway)
 			return
 		}
-		newGroupTask.member[strconv.Itoa(tmp.UserID)] = false
-		newGroupTask.alertFlag[strconv.Itoa(tmp.UserID)] = false
+		tmp.TaskID = strings.ToLower(tmp.TaskID)
+		tmp.UserID = strings.ToLower(tmp.UserID)
+		newGroupTask.member[tmp.UserID] = false
+		newGroupTask.alertFlag[tmp.UserID] = false
 		newGroupTask.quitFlag = false
 	}
 
 	// If already in a group task, retrun with StatusBadGateway.
 	for _, item := range cacheGroupTaskList {
 		if item.taskInfo.ID == newGroupTask.taskInfo.ID {
-			http.Error(w, "Some ohter member already started a task", http.StatusBadGateway)
+			fmt.Println("Some other member already started a task")
+			http.Error(w, "Some other member already started a task", http.StatusBadGateway)
 			return
 		}
 	}
@@ -119,20 +122,26 @@ func joinGroupTask(w http.ResponseWriter, r *http.Request) {
 	formData := make(map[string]string)
 	json.NewDecoder(r.Body).Decode(&formData)
 	inputUserID, _ := formData["userid"]
-	inputTaskID, _ := strconv.Atoi(formData["taskid"])
-	fmt.Println("User ", inputUserID, "wants to join task", inputTaskID)
+	inputTaskID, _ := formData["taskid"]
+	inputUserID = strings.ToLower(inputUserID)
+	inputTaskID = strings.ToLower(inputTaskID)
+	fmt.Println("User", inputUserID, "wants to join task", inputTaskID)
 
-	for _, item := range cacheGroupTaskList {
-		if item.taskInfo.ID == inputTaskID {
-			if _, ok := item.member[inputUserID]; ok {
-				item.member[inputUserID] = true
-				item.alertFlag[inputUserID] = true
-				w.WriteHeader(http.StatusOK)
-				return
+	for idx, item := range cacheGroupTaskList {
+		if strings.ToLower(item.taskInfo.ID) == inputTaskID {
+			for k, _ := range item.member {
+				if k == inputUserID{
+					cacheGroupTaskList[idx].member[inputUserID] = true
+					cacheGroupTaskList[idx].alertFlag[inputUserID] = true
+					w.WriteHeader(http.StatusOK)
+					fmt.Println(inputUserID, "successfully join the task", inputTaskID)
+					return
+				}
 			}
 		}
 	}
 
+	fmt.Println(inputUserID, "failed join the task", inputTaskID)
 	http.Error(w, "Failed to join the task.", http.StatusBadRequest)
 	return
 }
@@ -148,12 +157,15 @@ func checkStartGroupTask(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	formData := make(map[string]string)
 	json.NewDecoder(r.Body).Decode(&formData)
-	inputTaskID, _ := strconv.Atoi(formData["taskid"])
+	inputTaskID := formData["taskid"]
+	fmt.Println("Check if task", inputTaskID, "could start.")
 
 	for _, item := range cacheGroupTaskList {
 		if item.taskInfo.ID == inputTaskID {
 			for _, val := range item.member {
 				if val == false {
+					fmt.Println("Failed to start the task.")
+					fmt.Println(cacheGroupTaskList)
 					http.Error(w, "Failed to start the task.", http.StatusBadRequest)
 					return
 				}
@@ -178,7 +190,7 @@ func quitGroupTask(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	formData := make(map[string]string)
 	json.NewDecoder(r.Body).Decode(&formData)
-	inputTaskID, _ := strconv.Atoi(formData["taskid"])
+	inputTaskID := formData["taskid"]
 
 	for idx, item := range cacheGroupTaskList {
 		if item.taskInfo.ID == inputTaskID {
@@ -206,7 +218,7 @@ func checkGroupTaskQuit(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	formData := make(map[string]string)
 	json.NewDecoder(r.Body).Decode(&formData)
-	inputTaskID, _ := strconv.Atoi(formData["taskid"])
+	inputTaskID := formData["taskid"]
 
 	for _, item := range cacheGroupTaskList {
 		if item.taskInfo.ID == inputTaskID {

@@ -9,8 +9,8 @@ import (
 )
 
 type addTaskStruct struct {
-	ID          int      `json:"id"`
-	CreatorID   int      `json:"creatorid"`
+	ID          string   `json:"id"`
+	CreatorID   string   `json:"creatorid"`
 	Title       string   `json:"title"`
 	Desc        string   `json:"description"`
 	Duration    int      `json:"duration"`
@@ -41,25 +41,27 @@ func addTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println("Get add task id: ", formData.ID)
 	fmt.Println("Get add task title: ", formData.Title)
 	fmt.Println("Description:", formData.Desc)
 
 	var isGrouptask string = "false"
 
 	// Add task into 'task' table
-	insertSql := "INSERT INTO task(title, descption, duration, remaintime, typestr, isfinish, isgrouptask) VALUES ('" +
+	insertSql := "INSERT INTO task(id, title, description, duration, remaintime, typestr, isfinish, isgrouptask) VALUES ('" + formData.ID + "', '" +
 		formData.Title + "', '" + formData.Desc + "', " + strconv.Itoa(formData.Duration) + ", " + strconv.Itoa(formData.Duration) +
 		", '" + formData.Type + "', false, " + isGrouptask + ")"
 
 	res, err := dbconn.DBConn.Exec(insertSql)
 	if err != nil {
+		fmt.Print(err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	taskID, err := res.LastInsertId()
 
 	// Add user-task relationship into usertasklist table
-	insertSql = "INSERT INTO usertasklist VALUES (" + strconv.Itoa(formData.CreatorID) + ", " + strconv.FormatInt(taskID, 10) + ")"
+	insertSql = "INSERT INTO usertasklist VALUES ('" + formData.CreatorID + "', '" + formData.ID + "')"
 	_, err = dbconn.DBConn.Exec(insertSql)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -82,7 +84,7 @@ func addTask(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		insertSql = "INSERT INTO usertasklist VALUES (" + strconv.Itoa(userdata.ID) + ", " + strconv.FormatInt(taskID, 10) + ")"
+		insertSql = "INSERT INTO usertasklist VALUES ('" + userdata.ID + "', '" + formData.ID + "')"
 		_, err = dbconn.DBConn.Exec(insertSql)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -90,7 +92,7 @@ func addTask(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Update task to group task
-		updateSql := "UPDATE task SET isgrouptask=true WHERE id=" + strconv.FormatInt(taskID, 10)
+		updateSql := "UPDATE task SET isgrouptask=true WHERE id='" + formData.ID + "'"
 		_, err = dbconn.DBConn.Exec(updateSql)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)

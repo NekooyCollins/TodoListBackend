@@ -105,7 +105,7 @@ func registerUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// insert into database
-	insertSql := "INSERT INTO user(name, email, passwd) VALUES ('" + inputUser + "', '" + inputEmail + "', '" + inputPasswd + "')"
+	insertSql := "INSERT INTO user(id, name, email, passwd) VALUES ( uuid(), '" + inputUser + "', '" + inputEmail + "', '" + inputPasswd + "')"
 
 	res, err := dbconn.DBConn.Exec(insertSql)
 	if err != nil {
@@ -193,7 +193,7 @@ func getTaskList(w http.ResponseWriter, r *http.Request) {
 		break
 	}
 	// Get user tasks.
-	queryStr = "SELECT * FROM usertasklist WHERE userid=" + strconv.Itoa(userdata.ID) + ";"
+	queryStr = "SELECT * FROM usertasklist WHERE userid='" + userdata.ID + "';"
 	gettask, err := dbconn.DBConn.Query(queryStr)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -205,7 +205,7 @@ func getTaskList(w http.ResponseWriter, r *http.Request) {
 		if err = gettask.Scan(&usertask.UserID, &usertask.TaskID); err != nil {
 			http.Error(w, err.Error(), http.StatusBadGateway)
 		}
-		queryStr = "SELECT * FROM task WHERE id=" + strconv.Itoa(usertask.TaskID) + ";"
+		queryStr = "SELECT * FROM task WHERE id='" + usertask.TaskID + "';"
 		retTask, err := dbconn.DBConn.Query(queryStr)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -260,7 +260,7 @@ func getTaskMember(w http.ResponseWriter, r *http.Request) {
 		if err = rets.Scan(&getTask.UserID, &getTask.TaskID); err != nil {
 			http.Error(w, err.Error(), http.StatusBadGateway)
 		}
-		queryUserStr := "SELECT * FROM user WHERE id=" + strconv.Itoa(getTask.UserID) + ";"
+		queryUserStr := "SELECT * FROM user WHERE id='" + getTask.UserID + "';"
 		userRet, err := dbconn.DBConn.Query(queryUserStr)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -302,7 +302,7 @@ func getTaskDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check from database.
-	queryStr := "SELECT * FROM task WHERE id=" + inputTaskID + ";"
+	queryStr := "SELECT * FROM task WHERE id='" + inputTaskID + "';"
 	rets, err := dbconn.DBConn.Query(queryStr)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -331,7 +331,6 @@ func getTaskDetail(w http.ResponseWriter, r *http.Request) {
 // Handle getfriendlist request,
 // return all friends of the user.
 func getFriendList(w http.ResponseWriter, r *http.Request) {
-	println("getFriendList is called!!!!!")
 	var userdata database.UserType
 	var retFriendList []database.UserType
 
@@ -362,9 +361,9 @@ func getFriendList(w http.ResponseWriter, r *http.Request) {
 		break
 	}
 	println("now user name is: " + userdata.Name)
-	println("now userID is: " + strconv.Itoa(userdata.ID))
+	println("now userID is: " + userdata.ID)
 	// Get user friends.
-	queryStr = "SELECT * FROM userfriendlist WHERE userid=" + strconv.Itoa(userdata.ID) + ";"
+	queryStr = "SELECT * FROM userfriendlist WHERE userid='" + userdata.ID + "';"
 	getfriend, err := dbconn.DBConn.Query(queryStr)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -376,7 +375,7 @@ func getFriendList(w http.ResponseWriter, r *http.Request) {
 		if err = getfriend.Scan(&userfriends.UserID, &userfriends.FriendID); err != nil {
 			http.Error(w, err.Error(), http.StatusBadGateway)
 		}
-		queryStr = "SELECT * FROM user WHERE id=" + strconv.Itoa(userfriends.FriendID) + ";"
+		queryStr = "SELECT * FROM user WHERE id='" + userfriends.FriendID + "';"
 		retFriends, err := dbconn.DBConn.Query(queryStr)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -389,7 +388,7 @@ func getFriendList(w http.ResponseWriter, r *http.Request) {
 			retFriendList = append(retFriendList, friend)
 		}
 		println("now friend name is: " + friend.Name)
-		println("now friendID is: " + strconv.Itoa(friend.ID))
+		println("now friendID is: " + friend.ID)
 	}
 
 	// Return json data.
@@ -456,7 +455,7 @@ func addFriend(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	// Add user-friend relationship into usertasklist table
-	insertSql := "INSERT INTO userfriendlist VALUES (" + strconv.Itoa(userdata.ID) + ", " + strconv.Itoa(frienddata.ID) + ")"
+	insertSql := "INSERT INTO userfriendlist VALUES ('" + userdata.ID + "', '" + frienddata.ID + "')"
 	_, err = dbconn.DBConn.Exec(insertSql)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -484,7 +483,7 @@ func setTaskIsFinished(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updateSql := "UPDATE task SET isfinish=true WHERE id=" + finishedTaskId + ";"
+	updateSql := "UPDATE task SET isfinish=true WHERE id='" + finishedTaskId + "';"
 	_, err := dbconn.DBConn.Exec(updateSql)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -506,7 +505,7 @@ func finishTask(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(r.Body).Decode(&formData)
 	inputTaskID := formData["taskid"]
 
-	updateSql := "UPDATE task SET isfinish=true WHERE id=" + inputTaskID + ";"
+	updateSql := "UPDATE task SET isfinish=true WHERE id='" + inputTaskID + "';"
 	_, err := dbconn.DBConn.Exec(updateSql)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -516,7 +515,7 @@ func finishTask(w http.ResponseWriter, r *http.Request) {
 }
 
 // Update data to database
-func postLocalDataUpdate(w http.ResponseWriter, r *http.Request){
+func postLocalDataUpdate(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		fmt.Fprintf(w, "invalid_http_method")
@@ -529,32 +528,30 @@ func postLocalDataUpdate(w http.ResponseWriter, r *http.Request){
 	json.NewDecoder(r.Body).Decode(&formData)
 
 	// Append new task into database
-	for _, task := range formData{
-		if task.ID == 0{
-			insertSql := "INSERT INTO task(title, descption, duration, remaintime, typestr, isfinish, isgrouptask) VALUES ('" +
-				task.Title + "', '" + task.Desc + "', " + strconv.Itoa(task.Duration) + ", " + strconv.Itoa(task.Duration) +
+	for _, task := range formData {
+		// check from database if email has existed
+		var retCnt int
+		_ = dbconn.DBConn.QueryRow("SELECT count(id) FROM task WHERE id='" + task.ID + "';").Scan(&retCnt)
+		if retCnt == 0 {
+			fmt.Println("Insert new task")
+			insertSql := "INSERT INTO task(id, title, description, duration, remaintime, typestr, isfinish, isgrouptask) VALUES ('" +
+				task.ID + "', '" + task.Title + "', '" + task.Desc + "', " + strconv.Itoa(task.Duration) + ", " + strconv.Itoa(task.Duration) +
 				", '" + task.Type + "', false, false)"
 
-			res, err := dbconn.DBConn.Exec(insertSql)
+			_, err := dbconn.DBConn.Exec(insertSql)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			taskID, err := res.LastInsertId()
 
-			insertSql = "INSERT INTO usertasklist VALUES (" + inputUserID + ", " + strconv.FormatInt(taskID, 10) + ")"
+			insertSql = "INSERT INTO usertasklist VALUES ('" + inputUserID + "', '" + task.ID + "')"
 			_, err = dbconn.DBConn.Exec(insertSql)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-		}
-	}
-
-	// Update task data status
-	for _, task := range formData{
-		if task.ID != 0 && task.IsFinish == true {
-			updateSql := "UPDATE task SET isfinish=true WHERE id=" + strconv.Itoa(task.ID) + ";"
+		} else if task.IsFinish == true {
+			updateSql := "UPDATE task SET isfinish=true WHERE id='" + task.ID + "';"
 			_, err := dbconn.DBConn.Exec(updateSql)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
