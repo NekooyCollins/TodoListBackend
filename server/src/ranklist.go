@@ -28,7 +28,7 @@ func getRankList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get all friend's ID from userfriendlist.
-	queryStr := "SELECT * FROM userfriendlist WHERE userid=" + inputUserID + ";"
+	queryStr := "SELECT * FROM userfriendlist WHERE userid='" + inputUserID + "';"
 	friendRets, err := dbconn.DBConn.Query(queryStr)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -48,7 +48,7 @@ func getRankList(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Get this friends' all info from user.
-		queryStr = "SELECT * FROM user WHERE id=" + strconv.Itoa(userAndFriend.FriendID) + ";"
+		queryStr = "SELECT * FROM user WHERE id='" + userAndFriend.FriendID + "';"
 		friendInfoRet, err := dbconn.DBConn.Query(queryStr)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -61,7 +61,7 @@ func getRankList(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// Get all taskID from usertasklist table
-			queryStr = "SELECT * FROM usertasklist WHERE userid=" + strconv.Itoa(friendInfo.ID) + ";"
+			queryStr = "SELECT * FROM usertasklist WHERE userid='" + friendInfo.ID + "';"
 			taskIdRet, err := dbconn.DBConn.Query(queryStr)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
@@ -76,7 +76,7 @@ func getRankList(w http.ResponseWriter, r *http.Request) {
 				}
 
 				// Get info of this task from task table
-				queryStr = "SELECT * FROM task WHERE id=" + strconv.Itoa(userAndTask.TaskID) + " AND isfinish=1" + ";"
+				queryStr = "SELECT * FROM task WHERE id='" + userAndTask.TaskID + "' AND isfinish=1" + ";"
 				tasksRet, err := dbconn.DBConn.Query(queryStr)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)

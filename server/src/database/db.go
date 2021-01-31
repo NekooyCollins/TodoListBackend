@@ -9,7 +9,7 @@ import (
 
 // TaskType receives original task data from db
 type TaskType struct {
-	ID          int    `json:"id"`
+	ID          string `json:"id"`
 	Title       string `json:"title"`
 	Desc        string `json:"description"`
 	Duration    int    `json:"duration"`
@@ -21,7 +21,7 @@ type TaskType struct {
 
 // UserType receives original user data from db
 type UserType struct {
-	ID     int    `json:"id"`
+	ID     string `json:"id"`
 	Name   string `json:"name"`
 	Email  string `json:"email"`
 	Passwd string `json:"passwd"`
@@ -30,15 +30,15 @@ type UserType struct {
 // UserTaskListType receives original user-task
 // list data from db
 type UserTaskListType struct {
-	UserID int `json:"userid"`
-	TaskID int `json:"taskid"`
+	UserID string `json:"userid"`
+	TaskID string `json:"taskid"`
 }
 
 // UserFriendList receives original user-friend
 // list data from DB
 type UserFriendListType struct {
-	UserID   int `json:"userid"`
-	FriendID int `json:"friendid"`
+	UserID   string `json:"userid"`
+	FriendID string `json:"friendid"`
 }
 
 type RankListType struct {
