@@ -76,6 +76,7 @@ func loginCheck(w http.ResponseWriter, r *http.Request) {
 
 // Get new user data to register.
 func registerUser(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("register User is called")
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		fmt.Fprintf(w, "invalid_http_method")
@@ -109,6 +110,7 @@ func registerUser(w http.ResponseWriter, r *http.Request) {
 
 	res, err := dbconn.DBConn.Exec(insertSql)
 	if err != nil {
+		fmt.Println("error happens!")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -531,12 +533,16 @@ func postLocalDataUpdate(w http.ResponseWriter, r *http.Request) {
 	for _, task := range formData {
 		// check from database if email has existed
 		var retCnt int
+		finishFlag := "false"
+		if task.IsFinish == true {
+			finishFlag = "true"
+		}
 		_ = dbconn.DBConn.QueryRow("SELECT count(id) FROM task WHERE id='" + task.ID + "';").Scan(&retCnt)
 		if retCnt == 0 {
 			fmt.Println("Insert new task")
 			insertSql := "INSERT INTO task(id, title, description, duration, remaintime, typestr, isfinish, isgrouptask) VALUES ('" +
 				task.ID + "', '" + task.Title + "', '" + task.Desc + "', " + strconv.Itoa(task.Duration) + ", " + strconv.Itoa(task.Duration) +
-				", '" + task.Type + "', false, false)"
+				", '" + task.Type + "', " + finishFlag + ", false)"
 
 			_, err := dbconn.DBConn.Exec(insertSql)
 			if err != nil {

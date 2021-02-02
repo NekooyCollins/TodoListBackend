@@ -27,8 +27,68 @@ func getRankList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get user's total focus time
+	queryStr := "SELECT * FROM user WHERE id='" + inputUserID+ "';"
+	userRet, err := dbconn.DBConn.Query(queryStr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	for userRet.Next(){
+		var userInfo database.UserType
+		var myFinishedTaskList []database.TaskType
+		var myRankItem database.RankListType
+		var myFinishedTaskSetEmpty bool = true
+		var myTotalFocusTime int = 0
+
+		if err = userRet.Scan(&userInfo.ID, &userInfo.Name, &userInfo.Email, &userInfo.Passwd); err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+		}
+
+		// Get user's task id
+		queryStr = "SELECT * FROM usertasklist WHERE userid='" + userInfo.ID + "';"
+		myTaskIdRet, err := dbconn.DBConn.Query(queryStr)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		for myTaskIdRet.Next() {
+			var userAndTask database.UserTaskListType
+			var finishedTask database.TaskType
+			if err = myTaskIdRet.Scan(&userAndTask.UserID, &userAndTask.TaskID); err != nil {
+				http.Error(w, err.Error(), http.StatusBadGateway)
+			}
+
+			// Get finished task set from task table
+			queryStr = "SELECT * FROM task WHERE id='" + userAndTask.TaskID + "' AND isfinish=1" + ";"
+			myTasksRet, err := dbconn.DBConn.Query(queryStr)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			for myTasksRet.Next() {
+				myFinishedTaskSetEmpty = false
+				if err = myTasksRet.Scan(&finishedTask.ID, &finishedTask.Title, &finishedTask.Desc, &finishedTask.Duration,
+					&finishedTask.RemainTime, &finishedTask.Type, &finishedTask.IsFinish, &finishedTask.IsGroupTask); err != nil {
+					http.Error(w, err.Error(), http.StatusBadGateway)
+				}
+				myFinishedTaskList = append(myFinishedTaskList, finishedTask)
+			}
+		}
+		if myFinishedTaskSetEmpty == true {
+			myTotalFocusTime = 0
+		} else {
+			for i := 0; i < len(myFinishedTaskList); i++ {
+				myTotalFocusTime = myTotalFocusTime + myFinishedTaskList[i].Duration
+			}
+		}
+		myRankItem.UserName = userInfo.Name
+		myRankItem.TotalFocusTime = myTotalFocusTime
+		retRankList = append(retRankList, myRankItem)
+	}
+
 	// Get all friend's ID from userfriendlist.
-	queryStr := "SELECT * FROM userfriendlist WHERE userid='" + inputUserID + "';"
+	queryStr = "SELECT * FROM userfriendlist WHERE userid='" + inputUserID + "';"
 	friendRets, err := dbconn.DBConn.Query(queryStr)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

@@ -1,1 +1,1 @@
-{"DBUsername": "user","DBPasswd": "test123","DBPort": "3306","DBHost": "127.0.0.1","DBName": "testdb"}
+{"DBUsername": "user","DBPasswd": "test123","DBPort": "3306","DBHost": "127.0.0.1","DBName": "db"}

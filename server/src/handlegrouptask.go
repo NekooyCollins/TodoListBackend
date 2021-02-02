@@ -21,6 +21,7 @@ var cacheGroupTaskList []groupTask
 // Handle group task check.
 func getGroupTaskState(w http.ResponseWriter, r *http.Request) {
 	// Get request query value.
+	//fmt.Println("get group task state is called!")
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		fmt.Fprintf(w, "invalid_http_method")
@@ -28,9 +29,13 @@ func getGroupTaskState(w http.ResponseWriter, r *http.Request) {
 	}
 	// Get user id
 	inputID := r.URL.Query().Get("id")
+	inputID = strings.ToLower(inputID)
+	fmt.Println("input ID is: ", inputID)
 
 	// Check from cache group task list.
 	for _, task := range cacheGroupTaskList {
+		//fmt.Println("cached group task is:")
+		//fmt.Println(cacheGroupTaskList)
 		if val, ok := task.alertFlag[inputID]; ok {
 			if val == false {
 				// If not join yet, alert
@@ -55,7 +60,7 @@ func getGroupTaskState(w http.ResponseWriter, r *http.Request) {
 
 // A member in a group task start the task.
 func postStartGroupTask(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Try to start a group task.")
+	//fmt.Println("Try to start a group task.")
 	// Get request query value.
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -112,6 +117,7 @@ func postStartGroupTask(w http.ResponseWriter, r *http.Request) {
 
 // Accept invitation and join group task.
 func joinGroupTask(w http.ResponseWriter, r *http.Request) {
+	//fmt.Println("join the task is called!!!!!!!!!!!!!")
 	// Get request query value.
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -125,11 +131,12 @@ func joinGroupTask(w http.ResponseWriter, r *http.Request) {
 	inputTaskID, _ := formData["taskid"]
 	inputUserID = strings.ToLower(inputUserID)
 	inputTaskID = strings.ToLower(inputTaskID)
-	fmt.Println("User", inputUserID, "wants to join task", inputTaskID)
+	//fmt.Println("User", inputUserID, "wants to join task", inputTaskID)
 
 	for idx, item := range cacheGroupTaskList {
 		if strings.ToLower(item.taskInfo.ID) == inputTaskID {
 			for k, _ := range item.member {
+				//fmt.Println("here K is:", k)
 				if k == inputUserID{
 					cacheGroupTaskList[idx].member[inputUserID] = true
 					cacheGroupTaskList[idx].alertFlag[inputUserID] = true
@@ -141,7 +148,7 @@ func joinGroupTask(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	fmt.Println(inputUserID, "failed join the task", inputTaskID)
+	fmt.Println("join group task: ", inputUserID, "failed join the task", inputTaskID)
 	http.Error(w, "Failed to join the task.", http.StatusBadRequest)
 	return
 }
@@ -149,6 +156,7 @@ func joinGroupTask(w http.ResponseWriter, r *http.Request) {
 // Check if all members have joined one group task.
 func checkStartGroupTask(w http.ResponseWriter, r *http.Request) {
 	// Get request query value.
+	//fmt.Println("check start group task is called!!!!")
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		fmt.Fprintf(w, "invalid_http_method")
@@ -158,14 +166,15 @@ func checkStartGroupTask(w http.ResponseWriter, r *http.Request) {
 	formData := make(map[string]string)
 	json.NewDecoder(r.Body).Decode(&formData)
 	inputTaskID := formData["taskid"]
-	fmt.Println("Check if task", inputTaskID, "could start.")
+	inputTaskID = strings.ToLower(inputTaskID)
+	//fmt.Println("Check if task", inputTaskID, "could start.")
 
 	for _, item := range cacheGroupTaskList {
-		if item.taskInfo.ID == inputTaskID {
+		if strings.ToLower(item.taskInfo.ID) == inputTaskID {
 			for _, val := range item.member {
 				if val == false {
-					fmt.Println("Failed to start the task.")
-					fmt.Println(cacheGroupTaskList)
+					fmt.Println("check start group task: Failed to start the task.")
+					//fmt.Println(cacheGroupTaskList)
 					http.Error(w, "Failed to start the task.", http.StatusBadRequest)
 					return
 				}
@@ -181,6 +190,7 @@ func checkStartGroupTask(w http.ResponseWriter, r *http.Request) {
 
 // Quit a group task.
 func quitGroupTask(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("quit group task is called!!!!")
 	// Get request query value.
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -191,9 +201,11 @@ func quitGroupTask(w http.ResponseWriter, r *http.Request) {
 	formData := make(map[string]string)
 	json.NewDecoder(r.Body).Decode(&formData)
 	inputTaskID := formData["taskid"]
+	inputTaskID = strings.ToLower(inputTaskID)
+	fmt.Println("task ", inputTaskID, "want to quit.")
 
 	for idx, item := range cacheGroupTaskList {
-		if item.taskInfo.ID == inputTaskID {
+		if strings.ToLower(item.taskInfo.ID) == inputTaskID {
 			cacheGroupTaskList[idx].quitFlag = true
 			fmt.Println("Task ", inputTaskID, "has quit.")
 			w.WriteHeader(http.StatusOK)
@@ -209,7 +221,7 @@ func quitGroupTask(w http.ResponseWriter, r *http.Request) {
 // if quit, response 200.
 func checkGroupTaskQuit(w http.ResponseWriter, r *http.Request) {
 	// Get request query value.
-	fmt.Println("Check for task quit status here!")
+	fmt.Println("Check for task quit status here!!!!!!!!")
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		fmt.Fprintf(w, "invalid_http_method")
@@ -219,9 +231,11 @@ func checkGroupTaskQuit(w http.ResponseWriter, r *http.Request) {
 	formData := make(map[string]string)
 	json.NewDecoder(r.Body).Decode(&formData)
 	inputTaskID := formData["taskid"]
+	inputTaskID = strings.ToLower(inputTaskID)
+	fmt.Println("check if task ", inputTaskID, "quit.")
 
 	for _, item := range cacheGroupTaskList {
-		if item.taskInfo.ID == inputTaskID {
+		if strings.ToLower(item.taskInfo.ID) == inputTaskID {
 			if item.quitFlag == true {
 				fmt.Println("Found task ", inputTaskID, "has quit.")
 				w.WriteHeader(http.StatusOK)
