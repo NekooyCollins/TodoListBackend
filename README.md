@@ -1,12 +1,16 @@
 # TodoListBackend
 The backend server for TodoList app implemented by Golang
 
-## Tables
+## functions
+* handle request from client
+* update database in server
+
+## DataBase Tables
 ### Task
 
 | Attribute | Type |
 | --------- | ---- |
-| id | int |
+| uuid  | uuid |
 | title | string |
 | descption | string |
 | duration | int |
@@ -19,7 +23,7 @@ The backend server for TodoList app implemented by Golang
 
 | Attribute | Type |
 | --------- | ---- |
-| id | int |
+| uuid | uuid |
 | name | string |
 | email | string |
 | passwd | string |
@@ -28,12 +32,12 @@ The backend server for TodoList app implemented by Golang
 
 | Attribute | Type |
 | --------- | ---- |
-| userid | int |
-| taskid | int |
+| userid | uuid |
+| taskid | uuid |
 
 ### UserFriendList
 
 | Attribute | Type |
 | --------- | ---- |
-| userid | int |
-| friendid| int |
+| userid | uuid |
+| friendid| uuid |
